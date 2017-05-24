@@ -24,15 +24,15 @@ VERINFO				= V110
 ###########################################################################
 DEBUG				= n
 
-#OPMODE				= aarch64
-OPMODE				= aarch32
+OPMODE				= aarch64
+#OPMODE				= aarch32
 
 MEMTYPE				= DDR3
 #MEMTYPE			= LPDDR3
 MEMTEST				= n
 
-INITPMIC			= YES
-#INITPMIC			= NO
+#INITPMIC			= YES
+INITPMIC			= NO
 
 CRC_CHECK			= n
 
@@ -48,10 +48,10 @@ SUPPORT_SDMMC_BOOT		= y
 #BOARD				= DRONE
 #BOARD				= AVN
 #BOARD				= BF700
-BOARD				?= RAPTOR
-
+#BOARD				?= RAPTOR
+ BOARD				= NANOPI
 # System Log Message
-SYSLOG				?= n
+SYSLOG				?= y
 
 # Secure Boot
 SECURE_ON			?= 0
@@ -70,10 +70,10 @@ endif
 ifeq ($(OPMODE), aarch64)
 ifeq ($(OS),Windows_NT)
 CROSS_TOOL_TOP			=
-CROSS_TOOL			= $(CROSS_TOOL_TOP)aarch64-none-elf-
+CROSS_TOOL			= $(CROSS_TOOL_TOP)aarch64-linux-gnu-
 else
 CROSS_TOOL_TOP			=
-CROSS_TOOL			= $(CROSS_TOOL_TOP)aarch64-none-elf-
+CROSS_TOOL			= $(CROSS_TOOL_TOP)aarch64-linux-gnu-
 #CROSS_TOOL			= $(CROSS_TOOL_TOP)aarch64-elf-
 endif
 endif

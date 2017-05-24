@@ -114,7 +114,7 @@ static CBOOL	NX_SDMMC_SetClock( SDXCBOOTSTATUS * pSDXCBootStatus, CBOOL enb, U32
 	CBOOL ret;
 
 #if defined(VERBOSE)
-	dev_msg("NX_SDMMC_SetClock : divider = %d\r\n", divider);
+	dev_msg("NX_SDMMC_SetClock : nFreq = %d\r\n", nFreq);
 #endif
 
 	//	NX_ASSERT( (1==divider) || (0==(divider&1)) );		// 1 or even number
@@ -815,7 +815,6 @@ CBOOL	NX_SDMMC_Open( SDXCBOOTSTATUS * pSDXCBootStatus )//U32 option )
 		printf("Card Identify Failure\r\n");
 		return CFALSE;
 	}
-
 	//--------------------------------------------------------------------------
 	// data transfer mode : Stand-by state
 #if 0
@@ -824,6 +823,7 @@ CBOOL	NX_SDMMC_Open( SDXCBOOTSTATUS * pSDXCBootStatus )//U32 option )
 #else
 	if( CFALSE == NX_SDMMC_SetClock( pSDXCBootStatus, CTRUE, 25000000) )
 		return CFALSE;
+	
 #endif
 	if( CFALSE == NX_SDMMC_SelectCard(pSDXCBootStatus) )
 		return CFALSE;
@@ -861,7 +861,6 @@ static CBOOL	NX_SDMMC_ReadSectorData( SDXCBOOTSTATUS * pSDXCBootStatus, U32 numb
 
 	count = numberOfSector*BLOCK_LENGTH;
 	NX_ASSERT( 0 == (count % 32) );
-
 	while( 0 < count )
 	{
 		if( (pSDXCReg->RINTSTS & NX_SDXC_RINTSTS_RXDR)
@@ -922,7 +921,6 @@ static CBOOL	NX_SDMMC_ReadSectorData( SDXCBOOTSTATUS * pSDXCBootStatus, U32 numb
 	}
 
 	pSDXCReg->RINTSTS = NX_SDXC_RINTSTS_DTO;
-
 	return CTRUE;
 }
 
@@ -1042,7 +1040,6 @@ static	CBOOL	SDMMCBOOT(SDXCBOOTSTATUS * pSDXCBootStatus,
 		printf("Cannot Detect SDMMC\r\n");
 		return CFALSE;
 	}
-
 	if (0 == (pSDXCReg->STATUS & NX_SDXC_STATUS_FIFOEMPTY)) {
 		dev_msg( "FIFO Reset!!!\r\n" );
 		pSDXCReg->CTRL = NX_SDXC_CTRL_FIFORST;	// Reset the FIFO.
@@ -1093,17 +1090,18 @@ static	CBOOL	SDMMCBOOT(SDXCBOOTSTATUS * pSDXCBootStatus,
 				pTBI->SIGNATURE);
 		return CFALSE;
 	}
-
 	do {
 		U32 i;
 		U32 *src = (U32*)pTBI;
 		U32 *tb_load = (U32*)ptbh->tbbi.loadaddr;
 		U32 *dst = tb_load;
-
+#if 0
+		printf("begin copying.. srcaddr is %x,dttaddr is %x  \r\n",src,dst);
 		/* copy full struct nx_bootheader */
 		for (i = 0; i< sizeof(struct nx_bootheader)/sizeof(U32); i++)
 			*dst++ = *src++;
-
+		printf("copy success \r\n");
+#endif
 #ifdef SECURE_ON
 		dst = tb_load;
 
@@ -1114,7 +1112,7 @@ static	CBOOL	SDMMCBOOT(SDXCBOOTSTATUS * pSDXCBootStatus,
 			*dst++ = *src++;
 #endif
 	} while(0);
-	ptbh = (struct nx_bootheader *)ptbh->tbbi.loadaddr;
+	ptbh = (struct nx_bootheader *)pTBI;
 
 	ptbh->tbbi.loadsize += sizeof(struct nx_bootheader);
 	dev_msg("Load Addr :0x%08X,  Load Size :0x%08X,  Launch Addr :0x%08X\r\n",
@@ -1123,15 +1121,15 @@ static	CBOOL	SDMMCBOOT(SDXCBOOTSTATUS * pSDXCBootStatus,
 			(uint32_t)ptbh->tbbi.startaddr);
 
 	result = NX_SDMMC_ReadSectors(pSDXCBootStatus,
-			pSBI->DEVICEADDR / BLOCK_LENGTH + 2,
+			pSBI->DEVICEADDR / BLOCK_LENGTH + 1 ,
 			(ptbh->tbbi.loadsize + BLOCK_LENGTH - 1) / BLOCK_LENGTH,
-			(U32 *)((MPTRS)(ptbh->tbbi.loadaddr + BLOCK_LENGTH * 2)));
+			(U32 *)((MPTRS)ptbh->tbbi.loadaddr));
 	//pTBI->LAUNCHADDR = ptbh->tbbi.startaddr;	/* for old style boot */
 
-	if (pReg_ClkPwr->SYSRSTCONFIG & 1<<14)
-		Decrypt((U32 *)(ptbh->tbbi.loadaddr + sizeof(struct nx_bootheader)),
-			(U32 *)(ptbh->tbbi.loadaddr + sizeof(struct nx_bootheader)),
-			ptbh->tbbi.loadsize);
+//	if (pReg_ClkPwr->SYSRSTCONFIG & 1<<14)
+//		Decrypt((U32 *)(ptbh->tbbi.loadaddr + sizeof(struct nx_bootheader)),
+//			(U32 *)(ptbh->tbbi.loadaddr + sizeof(struct nx_bootheader)),
+//			ptbh->tbbi.loadsize);
 	if (result == CFALSE) {
 		printf("Image Read Failure\r\n");
 	}
